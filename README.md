@@ -2,8 +2,6 @@
 
 **《New Concept English》** 全四册在线学习系统，集课文朗读、单句点读、中英对照、单词即点即译、PDF 教材同步浏览于一体，浏览器直接访问，随时随地自学英语。
 
-基于 [LiDuoMiao/new-concept-english](https://github.com/LiDuoMiao/new-concept-english)（MIT）整理。
-
 ## ✨ 主要功能
 
 - 🎧 **美音课文朗读**：流畅自然的原版音频
@@ -16,7 +14,6 @@
 - 🚀 **无需安装**：纯静态实现，浏览器直接访问
 
 ## 📚 四册学习指南
-
 ### 📕 第一册：《First Things First》英语初阶
 
 **目标**：打好语音与基础
