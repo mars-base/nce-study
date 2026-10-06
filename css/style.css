@@ -567,6 +567,12 @@ body.dark-theme .control-panel {
   color: var(--accent-1);
 }
 
+.unit-select option,
+.book-select option {
+  background-color: var(--paper-2);
+  color: var(--ink-1);
+}
+
 .unit-select,
 .book-select {
   height: 42px;

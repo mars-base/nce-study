@@ -485,13 +485,13 @@ class ReadingSystem {
       }));
 
       if (this.dom.bookName) {
-        this.dom.bookName.textContent = `《${data.bookName}》`;
+        this.dom.bookName.textContent = `《${data.name}》`;
       }
       if (this.dom.bookLevel) {
-        this.dom.bookLevel.textContent = `${data.bookLevel}`;
+        this.dom.bookLevel.textContent = `${data.level}`;
       }
-      if (this.dom.bookCover && data.bookCover) {
-        this.dom.bookCover.src = `${this.state.bookPath}/${data.bookCover}`;
+      if (this.dom.bookCover && data.cover) {
+        this.dom.bookCover.src = `${this.state.bookPath}/${data.cover}`;
       }
       this.lrcCache.clear();
       this.audioPreload.clear();
