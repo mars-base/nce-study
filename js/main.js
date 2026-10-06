@@ -1,10 +1,3 @@
-// Author: Qim
-// Blog: https://ichochy.com
-// Email: Qim.it@icloud.com
-// FileName: iReader:main.js
-// Update: 2025/12/5 19:41
-// Copyright (c) 2025.
-
 const DEFAULT_BOOK_KEY = 'NCE1';
 const PLAY_MODE_STORAGE_KEY = 'playMode';
 const BOOK_SELECTION_STORAGE_KEY = 'selectedBookKey';
@@ -2020,11 +2013,9 @@ document.addEventListener('DOMContentLoaded', () => {
 // 主题切换功能
 function initThemeToggle() {
   const themeToggle = document.getElementById('themeToggle');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
   if (!themeToggle) return;
 
-  const savedTheme = localStorage.getItem('theme');
-  if (savedTheme === 'dark' || (!savedTheme && prefersDark.matches)) {
+  if (localStorage.getItem('theme') === 'dark') {
     document.body.classList.add('dark-theme');
   }
 
@@ -2037,16 +2028,6 @@ function initThemeToggle() {
     setTimeout(() => {
       themeToggle.style.transform = '';
     }, 300);
-  });
-
-  prefersDark.addEventListener('change', (event) => {
-    if (!localStorage.getItem('theme')) {
-      if (event.matches) {
-        document.body.classList.add('dark-theme');
-      } else {
-        document.body.classList.remove('dark-theme');
-      }
-    }
   });
 }
 
