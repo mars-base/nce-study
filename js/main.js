@@ -24,20 +24,10 @@ class ReadingSystem {
       availableSpeeds: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0],
       savedPlayTime: 0,
       isProgressDragging: false,
-      currentTab: 'pdf',
       currentNotes: null,
       qaMode: false,  // 是否处于问答模式
       qaTapeIndex: {},  // QA 音频索引缓存
-      currentPDFPageCount: 0  // 当前 PDF 总页数
     };
-
-    // PDF 相关
-    this.pdfDoc = null;
-    this.pdfCache = new Map();
-    this.currentPDF = null;
-    this.currentPDFContainer = null;
-    this.currentRenderedPage = 0;
-    this.isRendering = false;
 
     this.dom = {
       audioPlayer: qs('#audioPlayer'),
@@ -62,9 +52,6 @@ class ReadingSystem {
       wordPopup: qs('#wordPopup'),
       wordPopupOverlay: qs('#wordPopupOverlay'),
       wordPopupClose: qs('#wordPopupClose'),
-      viewTabs: qsa('.view-tabs .tab-btn'),
-      pdfContainer: qs('#pdfContainer'),
-      pageInput: qs('#pageInput'),
       notesContainer: qs('#notesContainer'),
       dialogBtn: document.getElementById('dialogBtn'),
       qaBtn: document.getElementById('qaBtn'),
@@ -106,262 +93,6 @@ class ReadingSystem {
       this.state.books = [];
     }
     return this.state.books;
-  }
-
-  // 获取 PDF 路径
-  getPDFPath(bookKey) {
-    const pdfMap = {
-      'NCE1': 'pdf/新概念[第1 册].pdf',
-      'NCE2': 'pdf/新概念[第2 册].pdf',
-      'NCE3': 'pdf/新概念[第3 册].pdf',
-      'NCE4': 'pdf/新概念[第4 册].pdf',
-      'NCE1(85)': 'pdf/新概念[第1 册].pdf',
-      'NCE2(85)': 'pdf/新概念[第2 册].pdf',
-      'NCE3(85)': 'pdf/新概念[第3 册].pdf',
-      'NCE4(85)': 'pdf/新概念[第4 册].pdf'
-    };
-    return pdfMap[bookKey] || null;
-  }
-
-  // 加载 PDF 文件
-  async loadPDF(bookKey) {
-    const pdfContainer = qs('#pdfContainer');
-    if (!pdfContainer) return;
-
-    const pdfPath = this.getPDFPath(bookKey);
-
-    if (!pdfPath) {
-      pdfContainer.innerHTML = '<div class="pdf-placeholder">未找到对应教材</div>';
-      return;
-    }
-
-    // 移除之前的滚动监听
-    if (this.pdfScrollHandler) {
-      pdfContainer.removeEventListener('scroll', this.pdfScrollHandler);
-    }
-
-    // 显示加载状态
-    pdfContainer.innerHTML = '<div class="pdf-placeholder">加载教材中...</div>';
-
-    try {
-      // 检查缓存
-      let pdf;
-      if (this.pdfCache.has(pdfPath)) {
-        pdf = this.pdfCache.get(pdfPath);
-      } else {
-        // 加载 PDF
-        const loadingTask = pdfjsLib.getDocument(pdfPath);
-        pdf = await loadingTask.promise;
-        // 缓存
-        this.pdfCache.set(pdfPath, pdf);
-      }
-
-      // 保存当前 PDF 和容器引用
-      this.currentPDF = pdf;
-      this.currentPDFContainer = pdfContainer;
-      this.currentRenderedPage = 0;
-
-      // 初始渲染前几页
-      await this.renderMorePages();
-
-      // 添加滚动监听
-      this.pdfScrollHandler = () => {
-        if (this.isRendering) return;
-        const { scrollTop, scrollHeight, clientHeight } = pdfContainer;
-        if (scrollTop + clientHeight >= scrollHeight - 100) {
-          this.renderMorePages();
-        }
-        // 更新当前页码显示
-        this.updatePageInput();
-      };
-      pdfContainer.addEventListener('scroll', this.pdfScrollHandler);
-
-      // 显示页码输入框
-      this.initPageInput(pdf);
-
-    } catch (error) {
-      console.error('PDF 加载失败:', error);
-      pdfContainer.innerHTML = '<div class="pdf-placeholder">教材加载失败</div>';
-    }
-  }
-
-  // 渲染更多页面
-  async renderMorePages() {
-    if (!this.currentPDF || !this.currentPDFContainer || this.isRendering) return;
-
-    const container = this.currentPDFContainer;
-    const pdf = this.currentPDF;
-    const pageSize = 10; // 每次加载10页
-    const startPage = this.currentRenderedPage + 1;
-    const endPage = Math.min(startPage + pageSize - 1, pdf.numPages);
-
-    if (startPage > pdf.numPages) return;
-
-    this.isRendering = true;
-
-    try {
-      for (let i = startPage; i <= endPage; i++) {
-        const page = await pdf.getPage(i);
-        const scale = container.clientWidth / page.getViewport({ scale: 1 }).width;
-        const viewport = page.getViewport({ scale });
-
-        const canvas = document.createElement('canvas');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-
-        const context = canvas.getContext('2d');
-        await page.render({ canvasContext: context, viewport }).promise;
-
-        // 在加载提示之前插入
-        const placeholder = container.querySelector('.pdf-placeholder');
-        if (placeholder) {
-          container.insertBefore(canvas, placeholder);
-        } else {
-          container.appendChild(canvas);
-        }
-      }
-
-      this.currentRenderedPage = endPage;
-
-      // 更新或移除加载提示
-      let placeholder = container.querySelector('.pdf-placeholder');
-      if (endPage >= pdf.numPages) {
-        if (placeholder) placeholder.remove();
-      } else {
-        if (!placeholder) {
-          placeholder = document.createElement('div');
-          placeholder.className = 'pdf-placeholder';
-          container.appendChild(placeholder);
-        }
-        placeholder.textContent = `共 ${pdf.numPages} 页，已加载 ${endPage} 页，滚动加载更多...`;
-      }
-    } catch (error) {
-      console.error('渲染 PDF 页失败:', error);
-    }
-
-    this.isRendering = false;
-  }
-
-  // 初始化页码输入框
-  initPageInput(pdf) {
-    const pageInput = this.dom.pageInput;
-    if (!pageInput) return;
-
-    this.currentPDFPageCount = pdf.numPages;
-    pageInput.style.display = 'block';
-    this.updatePageInput();
-
-    // 输入框事件
-    pageInput.oninput = () => {
-      // 只允许数字
-      pageInput.value = pageInput.value.replace(/\D/g, '');
-    };
-
-    pageInput.onkeydown = (e) => {
-      if (e.key === 'Enter') {
-        const pageNum = parseInt(pageInput.value);
-        if (pageNum && pageNum >= 1 && pageNum <= this.currentPDFPageCount) {
-          this.goToPage(pageNum);
-        } else {
-          this.updatePageInput();
-        }
-      }
-    };
-  }
-
-  // 更新页码输入框显示
-  updatePageInput() {
-    const pageInput = this.dom.pageInput;
-    if (!pageInput || !this.currentPDFContainer) return;
-
-    const container = this.currentPDFContainer;
-    const scrollTop = container.scrollTop;
-    const canvases = container.querySelectorAll('canvas');
-    let currentPage = 1;
-
-    // 根据滚动位置计算当前页
-    let accumulatedHeight = 0;
-    for (let i = 0; i < canvases.length; i++) {
-      const canvas = canvases[i];
-      const rect = canvas.getBoundingClientRect();
-      const displayedHeight = rect.height + 8; // 8px gap
-      if (scrollTop < accumulatedHeight + displayedHeight) {
-        currentPage = i + 1;
-        break;
-      }
-      accumulatedHeight += displayedHeight;
-    }
-
-    pageInput.value = `第 ${currentPage} 页`;
-  }
-
-  // 跳转到指定页
-  async goToPage(pageNum) {
-    const container = this.currentPDFContainer;
-    const pdf = this.currentPDF;
-    if (!container || !pdf) return;
-
-    if (pageNum < 1 || pageNum > pdf.numPages) return;
-
-    // 如果目标页还没渲染，先加载到目标页
-    if (this.currentRenderedPage < pageNum) {
-      this.isRendering = true;
-      try {
-        // 循环渲染直到渲染到目标页
-        while (this.currentRenderedPage < pageNum && this.currentRenderedPage < pdf.numPages) {
-          const pageSize = 10;
-          const startPage = this.currentRenderedPage + 1;
-          const endPage = Math.min(startPage + pageSize - 1, pdf.numPages);
-
-          for (let i = startPage; i <= endPage; i++) {
-            const page = await pdf.getPage(i);
-            const scale = container.clientWidth / page.getViewport({ scale: 1 }).width;
-            const viewport = page.getViewport({ scale });
-
-            const canvas = document.createElement('canvas');
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-
-            const context = canvas.getContext('2d');
-            await page.render({ canvasContext: context, viewport }).promise;
-
-            const placeholder = container.querySelector('.pdf-placeholder');
-            if (placeholder) {
-              container.insertBefore(canvas, placeholder);
-            } else {
-              container.appendChild(canvas);
-            }
-          }
-
-          this.currentRenderedPage = endPage;
-
-          // 移除加载提示
-          let placeholder = container.querySelector('.pdf-placeholder');
-          if (endPage >= pdf.numPages && placeholder) {
-            placeholder.remove();
-          } else if (placeholder) {
-            placeholder.textContent = `共 ${pdf.numPages} 页，已加载 ${endPage} 页，滚动加载更多...`;
-          }
-        }
-      } catch (error) {
-        console.error('渲染 PDF 页失败:', error);
-      }
-      this.isRendering = false;
-    }
-
-    // 现在执行滚动
-    const canvases = container.querySelectorAll('canvas');
-    if (pageNum > canvases.length) return;
-
-    let targetScrollTop = 0;
-    for (let i = 0; i < pageNum - 1; i++) {
-      targetScrollTop += canvases[i].height + 8;
-    }
-
-    container.scrollTo({
-      top: targetScrollTop,
-      behavior: 'smooth'
-    });
   }
 
   resolveBookByKey(bookKey) {
@@ -437,9 +168,6 @@ class ReadingSystem {
     this.renderUnitList();
     this.renderUnitSelect();
     this.resetUnitListScroll();
-
-    // 加载 PDF
-    await this.loadPDF(bookKey);
   }
 
   renderEmptyState(message) {
@@ -594,10 +322,8 @@ class ReadingSystem {
     this.loadSavedSpeed();
     this.prefetchUnit(unitIndex + 1);
 
-    // 在 loadUnitByIndex 方法末尾，当前单元变化时重置笔记
-    if (this.state.currentTab === 'notes') {
-      this.loadNotes();
-    }
+    // 当前单元变化时刷新笔记
+    this.loadNotes();
   }
 
   setQAMode(isQA) {
@@ -1016,7 +742,6 @@ class ReadingSystem {
     this.bindQAToggle();
     this.bindTranslationToggle();
     this.bindWordPopupEvents();
-    this.bindTabSwitching();
 
     // 笔记区域的单词点击
     document.addEventListener('click', (event) => {
@@ -1069,45 +794,6 @@ class ReadingSystem {
         }
       });
     });
-  }
-
-  bindTabSwitching() {
-    this.dom.viewTabs.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const tab = btn.dataset.tab;
-        this.switchTab(tab);
-      });
-    });
-  }
-
-  switchTab(tab) {
-    // 更新按钮状态
-    this.dom.viewTabs.forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.tab === tab);
-    });
-
-    // 更新容器显示
-    if (tab === 'pdf') {
-      this.dom.pdfContainer.style.display = '';
-      this.dom.notesContainer.style.display = 'none';
-      // 显示页码输入框
-      if (this.dom.pageInput) {
-        this.dom.pageInput.style.display = '';
-      }
-    } else {
-      this.dom.pdfContainer.style.display = 'none';
-      this.dom.notesContainer.style.display = '';
-      // 隐藏页码输入框
-      if (this.dom.pageInput) {
-        this.dom.pageInput.style.display = 'none';
-      }
-      // 如果笔记未加载，则加载
-      if (!this.state.currentNotes) {
-        this.loadNotes();
-      }
-    }
-
-    this.state.currentTab = tab;
   }
 
   async loadNotes() {

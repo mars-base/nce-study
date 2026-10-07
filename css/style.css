@@ -1757,8 +1757,8 @@ body::-webkit-scrollbar-thumb:hover,
   }
 }
 
-/* PDF Viewer */
-.pdf-viewer {
+/* 笔记侧栏 */
+.notes-viewer {
   width: 50%;
   flex-shrink: 0;
   background: var(--glass);
@@ -1770,78 +1770,9 @@ body::-webkit-scrollbar-thumb:hover,
   position: relative;
 }
 
-#pdfContainer {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 8px;
-  gap: 8px;
-}
-
-/* 自定义滚动条滑块样式 */
-#pdfContainer::-webkit-scrollbar {
-  width: 8px;
-}
-
-#pdfContainer::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-#pdfContainer::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 4px;
-}
-
-#pdfContainer::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-1);
-}
-
-/* PDF 页码输入框 - 浮在底部中央 */
-.pdf-page-input {
-  position: absolute;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 6px 14px;
-  font-size: 13px;
-  color: #333333;
-  text-align: center;
-  width: 110px;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  box-shadow: var(--shadow-sm);
-}
-
-.pdf-page-input:hover {
-  border-color: var(--accent-1);
-  box-shadow: var(--shadow-md);
-}
-
-.pdf-page-input::placeholder {
-  color: #999999;
-}
-
-#pdfContainer canvas {
-  max-width: 100%;
-  height: auto !important;
-  box-shadow: var(--shadow-sm);
-}
-
-.pdf-placeholder {
-  color: var(--ink-3);
-  text-align: center;
-  padding: 40px 20px;
-  font-size: 14px;
-}
-
-/* 移动端隐藏 PDF 区域 */
+/* 移动端隐藏笔记区域 */
 @media (max-width: 768px) {
-  .pdf-viewer {
+  .notes-viewer {
     display: none;
   }
   .player-column {
@@ -1849,15 +1780,7 @@ body::-webkit-scrollbar-thumb:hover,
   }
 }
 
-/* 标签切换样式 */
-.view-tabs {
-    display: flex;
-    gap: 8px;
-    padding: 8px 12px;
-    background: var(--glass);
-    border-bottom: 1px solid var(--border);
-}
-
+/* 标签按钮样式 */
 .tab-btn {
     flex: 1;
     padding: 8px 16px;

@@ -32,11 +32,6 @@
     <meta name="twitter:image" content="https://nce-study.pages.dev/screenshot/pc.png"/>
     <title>新概念英语 NCE 听力播放器 | New Concept English</title>
     <link rel="stylesheet" href="css/style.css"/>
-    <script src="js/vendor/pdf.min.js"></script>
-    <script>
-        // 设置 pdf.js worker
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'js/vendor/pdf.worker.min.js';
-    </script>
     <script type="application/ld+json">
         {
             "@context": "https://schema.org",
@@ -202,21 +197,9 @@
             </main>
         </div>
 
-        <!-- 新增：右侧 PDF 预览区 -->
-        <aside class="pdf-viewer desktop-only">
-            <!-- 标签切换 -->
-            <div class="view-tabs">
-                <button class="tab-btn active" data-tab="pdf">课本</button>
-                <button class="tab-btn" data-tab="notes">学习笔记</button>
-            </div>
-            <!-- PDF容器 -->
-            <div id="pdfContainer" class="content-container">
-                <div class="pdf-placeholder">选择一个课本开始学习...</div>
-            </div>
-            <!-- 页码输入框 - 放在pdfContainer外面，固定定位 -->
-            <input type="text" id="pageInput" class="pdf-page-input" placeholder="第 页" style="display: none;">
-            <!-- 笔记容器 -->
-            <div id="notesContainer" class="content-container notes-container" style="display: none;">
+        <!-- 新增：右侧学习笔记区 -->
+        <aside class="notes-viewer desktop-only">
+            <div id="notesContainer" class="content-container notes-container">
                 <div class="notes-placeholder">选择一个课程查看学习笔记...</div>
             </div>
         </aside>
