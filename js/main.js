@@ -25,8 +25,6 @@ class ReadingSystem {
       savedPlayTime: 0,
       isProgressDragging: false,
       currentNotes: null,
-      qaMode: false,  // 是否处于问答模式
-      qaTapeIndex: {},  // QA 音频索引缓存
     };
 
     this.dom = {
@@ -53,9 +51,6 @@ class ReadingSystem {
       wordPopupOverlay: qs('#wordPopupOverlay'),
       wordPopupClose: qs('#wordPopupClose'),
       notesContainer: qs('#notesContainer'),
-      dialogBtn: document.getElementById('dialogBtn'),
-      qaBtn: document.getElementById('qaBtn'),
-      qaToggle: document.querySelector('.qa-toggle')
     };
 
     this.lyricLineEls = [];
@@ -136,35 +131,7 @@ class ReadingSystem {
     this.persistBookPreference(this.state.bookKey);
 
     this.updateBookSelects();
-    // NCE1 显示问答切换按钮
-    const isNCE1 = bookKey === 'NCE1';
-    if (this.dom.qaToggle) {
-      this.dom.qaToggle.style.display = isNCE1 ? 'flex' : 'none';
-    }
-    // 切换书籍时重置为对话模式
-    if (this.dom.dialogBtn && this.dom.qaBtn) {
-      this.dom.dialogBtn.classList.add('active');
-      this.dom.qaBtn.classList.remove('active');
-      console.log('Reset QA buttons to dialog active', {
-        dialogHasActive: this.dom.dialogBtn.classList.contains('active'),
-        qaHasActive: this.dom.qaBtn.classList.contains('active')
-      });
-    }
-    this.state.qaMode = false;
     await this.loadBookConfig();
-    // 加载 QA 音频索引（NCE1 专用）
-    if (isNCE1) {
-      fetch(`qa_tape/index.json`)
-          .then(r => r.json())
-          .then(index => {
-            this.state.qaTapeIndex = index;
-          })
-          .catch(() => {
-            this.state.qaTapeIndex = {};
-          });
-    } else {
-      this.state.qaTapeIndex = {};
-    }
     this.renderUnitList();
     this.renderUnitSelect();
     this.resetUnitListScroll();
@@ -309,75 +276,12 @@ class ReadingSystem {
       this.dom.audioPlayer.load();
     }
 
-    // 如果处于问答模式，重新加载问答音频
-    if (this.state.qaMode) {
-      const qaUrl = this.getQAAudioUrl(unitIndex);
-      if (qaUrl) {
-        this.dom.audioPlayer.src = qaUrl;
-        this.dom.audioPlayer.load();
-      }
-    }
-
     this.loadPlayTime();
     this.loadSavedSpeed();
     this.prefetchUnit(unitIndex + 1);
 
     // 当前单元变化时刷新笔记
     this.loadNotes();
-  }
-
-  setQAMode(isQA) {
-    const { qaToggle, dialogBtn, qaBtn, prevUnitBtn, nextUnitBtn, toggleTranslationBtn, lyricsDisplay } = this.dom;
-
-    if (!qaToggle) return;
-
-    this.state.qaMode = isQA;
-    this.resetPlayer();
-
-    // 更新按钮状态
-    if (dialogBtn && qaBtn) {
-      dialogBtn.classList.toggle('active', !isQA);
-      qaBtn.classList.toggle('active', isQA);
-    }
-
-    if (isQA) {
-      // 加载问答音频
-      const qaIndex = this.state.currentUnitIndex;
-      const qaUrl = this.getQAAudioUrl(qaIndex);
-      if (qaUrl && this.dom.audioPlayer) {
-        this.dom.audioPlayer.src = qaUrl;
-        this.dom.audioPlayer.load();
-      }
-
-      // 隐藏不需要的按钮
-      if (prevUnitBtn) prevUnitBtn.style.display = 'none';
-      if (nextUnitBtn) nextUnitBtn.style.display = 'none';
-      if (toggleTranslationBtn) toggleTranslationBtn.style.display = 'none';
-
-      // 保留歌词区域外框，显示提示文字
-      if (lyricsDisplay) {
-        lyricsDisplay.innerHTML = '<p class="placeholder">听录音回答问题，请参考课本内容</p>';
-      }
-    } else {
-      // 恢复对话音频
-      const unit = this.state.units[this.state.currentUnitIndex];
-      if (unit && unit.audio && this.dom.audioPlayer) {
-        this.dom.audioPlayer.src = unit.audio;
-        this.dom.audioPlayer.load();
-      }
-
-      // 显示所有按钮
-      if (prevUnitBtn) prevUnitBtn.style.display = '';
-      if (nextUnitBtn) nextUnitBtn.style.display = '';
-      if (toggleTranslationBtn) toggleTranslationBtn.style.display = '';
-
-      // 恢复歌词显示
-      this.renderLyrics();
-    }
-  }
-
-  getQAAudioUrl(unitIndex) {
-    return this.state.qaTapeIndex?.[unitIndex] || null;
   }
 
   resetPlayer() {
@@ -739,7 +643,6 @@ class ReadingSystem {
     this.bindLyrics();
     this.bindPlayerControls();
     this.bindNavigation();
-    this.bindQAToggle();
     this.bindTranslationToggle();
     this.bindWordPopupEvents();
 
@@ -1670,23 +1573,6 @@ class ReadingSystem {
     }
   }
 
-  bindQAToggle() {
-    const dialogBtn = document.getElementById('dialogBtn');
-    const qaBtn = document.getElementById('qaBtn');
-
-    console.log('bindQAToggle called', { dialogBtn, qaBtn });
-
-    if (!dialogBtn || !qaBtn) return;
-
-    dialogBtn.addEventListener('click', () => {
-      console.log('dialogBtn clicked, calling setQAMode(false)');
-      this.setQAMode(false);
-    });
-    qaBtn.addEventListener('click', () => {
-      console.log('qaBtn clicked, calling setQAMode(true)');
-      this.setQAMode(true);
-    });
-  }
 }
 
 // 初始化系统
